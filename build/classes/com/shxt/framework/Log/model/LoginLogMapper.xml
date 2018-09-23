@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    <mapper namespace="com.shxt.framework.Log.dao.LoginLogDao">
+    <resultMap type="com.shxt.framework.Log.model.LoginLog" id="BaseResultMap" >
+        <!-- 做主键映射 -->
+        <id column="id"  property="id" />
+        <!-- 做其他数据的映射（简单数据） --> 
+        <result column="user_id"  property="user_id" />   
+        <result column="login_time" property="login_time" />
+        <result column="ip" property="ip" />
+    </resultMap>
+    <sql id="sys_login_log_columns">
+        id,user_id,login_time,ip
+    </sql>
+    <sql id="sys_login_log_columns_alias">
+    ${alias}.id,${alias}.user_id,${alias}.login_time,${alias}.ip
+    </sql>
+    
+    <insert id="insert" parameterType="com.shxt.framework.Log.model.LoginLog"
+    useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_login_log
+        (id,user_id,login_time,ip)
+        VALUES
+        (UUID(),#{user_id},NOW(),#{ip})
+    </insert>
+   
+   <resultMap type="com.shxt.framework.Log.model.LoginLog" id="SimpleResultMap"
+   extends="BaseResultMap">
+    <association property="user" javaType="com.shxt.framework.user.model.User"
+    resultMap="com.shxt.framework.user.dao.UserDao.BaseResultMap"
+    />
+   </resultMap>
+   <!-- 练习的知识点：连接查询，使用别名方式 -->
+   <select id="list" resultMap="SimpleResultMap" parameterType="com.shxt.mannger.model.Pager">
+       SELECT
+          <include refid="sys_login_log_columns_alias">
+            <property name="alias" value="sll"/>
+          </include>
+          ,
+          <include refid="com.shxt.framework.user.dao.UserDao.oa_user_columns_alias">
+            <property name="alias" value="su"/>
+          </include>
+        FROM sys_login_log sll
+          LEFT JOIN oa_user su
+            ON sll.user_id = su.user_id
+         <where>
+            <choose>
+               <when test="query.flag == 1 ">
+                sll.login_time > #{query.startDate}
+               </when> 
+               <when test="query.flag == 2 ">
+               <![CDATA[
+                    sll.login_time < #{query.endDate}
+               ]]>
+               </when>
+               <when test="query.flag == 3">
+                    sll.login_time between #{query.startDate} and #{query.endDate}
+               </when>
+            </choose>
+         </where>   
+        ORDER BY sll.login_time desc
+        LIMIT
+        ${offset},${pageSize}
+    </select>
+    
+    <select id="count" parameterType="com.shxt.mannger.model.Pager" resultType="int">
+        SELECT
+            count(*)
+        FROM
+            sys_login_log  sll
+        <where>
+        <choose>
+               <when test="query.flag == '1' ">
+                sll.login_time > #{query.startDate}
+               </when> 
+               <when test="query.flag == '2' ">
+               <![CDATA[
+                    sll.login_time < #{query.endDate}
+               ]]>
+               </when>
+               <when test="query.flag == 3 ">
+                    sll.login_time between #{query.startDate} and #{query.endDate}
+                </when>
+            </choose>
+         </where>    
+    </select>
+    
+    </mapper>

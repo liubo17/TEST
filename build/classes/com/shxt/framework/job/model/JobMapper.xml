@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <!-- 接口模式1 命名空间必须为接口UserDao的全路径 -->
+    <mapper namespace="com.shxt.framework.job.dao.JobDao">
+    <!-- 基本的结果集映射 -->
+    <resultMap type="com.shxt.framework.job.model.Job" id="BaseResultMap">
+        <id column="job_id" property="job_id"/>
+        <result column="job_name" property="job_name"/>
+        <result column="remark" property="remark"/>
+    </resultMap>
+    <sql id="oa_job_columns">
+        job_id,job_name,remark
+    </sql>
+     <sql id="oa_job_columns_alias">
+    ${alias}.job_id,${alias}.job_name,${alias}.remark
+    </sql>
+    <!-- 显示职位信息 -->
+    <select id="list" resultMap="BaseResultMap">
+        SELECT
+            <include refid="oa_job_columns"/>
+            FROM
+                oa_job
+    </select>
+    <!-- 添加职位 -->
+    <insert id="save" parameterType="com.shxt.framework.job.model.Job"
+    keyProperty="job_id" useGeneratedKeys="true"
+    >
+    INSERT INTO oa_job
+    (job_name,remark)
+    VALUES(#{job_name},#{remark})
+    </insert>
+    <!--通过主键获取职位信息  -->
+    <select id="load" parameterType="int" resultMap="BaseResultMap">
+        SELECT
+            <include refid="oa_job_columns"/>
+            FROM 
+            oa_job
+            WHERE
+                job_id=#{job_id}
+    </select>
+    <!-- 4.职位更新，动态SQL语句的标准写法-->
+    <update id="update" parameterType="com.shxt.framework.job.model.Job">
+        UPDATE 
+            oa_job
+        <set>
+            <if test="job_name != null and job_name != ''">
+                job_name= #{job_name},
+            </if>
+            <if test="remark != null and remark != ''">
+                remark= #{remark},
+            </if>
+        </set>
+          WHERE
+              job_id=#{job_id}
+    </update>
+    <!-- 5.职位的逻辑删除 -->
+    
+    <!-- 6.职位名称的数量 -->
+    <select id="countJobName" parameterType="string" resultType="int">
+        SELECT
+            COUNT(*)
+        FROM
+            oa_job
+        WHERE
+            job_name=#{job_name}
+    </select>
+    
+   </mapper>

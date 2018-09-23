@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <!-- 接口模式1 命名空间必须为接口UserDao的全路径 -->
+    <mapper namespace="com.shxt.framework.user.dao.UserDao">
+    <!-- 基本的结果集映射 -->
+    <resultMap type="com.shxt.framework.user.model.User" id="BaseResultMap">
+        <id column="user_id" property="user_id"/>
+        <result column="account" property="account"/>
+        <result column="password" property="password"/>
+        <result column="user_name" property="user_name"/>
+        <result column="status" property="status"/>
+        <result column="role_name" property="role_name"/>
+    </resultMap>
+    <sql id="oa_user_columns">
+        user_id,account,user_name,status,role_name
+    </sql>
+     <sql id="oa_user_columns_alias">
+    ${alias}.user_id,${alias}.account,${alias}.user_name,${alias}.status,${alias}.role_name
+    </sql>
+    <!-- 用户登陆 -->
+    <select id="login" resultMap="BaseResultMap">
+        SELECT
+            <include refid="oa_user_columns"></include>
+        FROM
+            oa_user
+        WHERE
+            account=#{account}<!-- 默认是param1 dao包里面的 -->
+        AND
+            password=#{password}
+    </select>
+    <!--2 用户列表AJAX完成数据的加载 -->
+    <select id="list" parameterType="com.shxt.mannger.model.Pager" resultMap="BaseResultMap">
+        SELECT 
+            <include refid="oa_user_columns"/>
+        FROM 
+            oa_user
+        ORDER BY user_id DESC
+        LIMIT ${offset},${pageSize}
+    </select>
+    <!-- 3.获取查询的总记录数 -->
+    <select id="countUsers" parameterType="com.shxt.mannger.model.Pager" resultType="int">
+        SELECT
+             COUNT(*)
+        FROM 
+            oa_user
+    </select>
+    <!--添加用户  -->
+    <insert id="save" parameterType="com.shxt.framework.user.model.User" keyProperty="user_id" useGeneratedKeys="true">
+    INSERT INTO oa_user
+        (account,user_name,password,role_name)
+    VALUES
+        (#{account},#{user_name},#{password},#{role_name})
+        
+    </insert>
+    <!-- 3.通过主键获取用户信息-->
+    <select id="load" parameterType="int" resultMap="BaseResultMap">
+        SELECT
+            <include refid="oa_user_columns"/>
+            FROM 
+            oa_user
+            WHERE
+                user_id=#{user_id}
+    </select>
+    <!-- 验证账号是否重复需要的 -->
+    <select id="countAccount" parameterType="string" resultType="int">
+        SELECT
+            COUNT(*)
+        FROM
+            oa_user
+        WHERE
+            account=#{account}
+    </select>
+    <!-- 验证姓名是否重复需要的 -->
+    <select id="countUserName" parameterType="string" resultType="int">
+        SELECT
+            COUNT(*)
+        FROM
+            oa_user
+        WHERE
+            user_name=#{user_name}
+    </select>
+    <!-- 职位更新，动态SQL语句的标准写法-->
+    <update id="update" parameterType="com.shxt.framework.user.model.User">
+        UPDATE 
+            oa_user
+        <set>
+            <if test="user_name != null and user_name != ''">
+               user_name= #{user_name},
+            </if>
+            <if test="password != null and password != ''">
+                password= #{password},
+            </if>
+            <if test="role_name != null and role_name != ''">
+                role_name= #{role_name},
+            </if>
+        </set>
+          WHERE
+              user_id=#{user_id}
+    </update>
+    <!--删除该用户  -->
+    <delete id="delete" parameterType="com.shxt.framework.user.model.User" >
+        UPDATE
+            oa_user
+        SET
+            status=#{status}    
+        WHERE
+        user_id=#{user_id} 
+    </delete>
+   </mapper>

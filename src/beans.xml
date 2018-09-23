@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd"
+>
+    <!-- 1.启动Spring注解 -->
+    <context:annotation-config />
+    <!-- 2.扫描 -->
+    <context:component-scan base-package="com.shxt" >
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+        <context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice" />
+    </context:component-scan>
+    <!-- 3.读取properityes属性文件 -->
+    <context:property-placeholder location="classpath:jdbc.properties" />
+    <!-- 4.配置数据源 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+     destroy-method="close">
+        <!--配置驱动类 -->
+        <property name="driverClassName" value="${mysql.drive}" />
+        <!-- 配置访问路径 -->
+        <property name="url" value="${mysql.url}" />
+        <!--配置用户名 -->
+        <property name="username" value="${mysql.username}" />
+        <!--配置密码 -->
+        <property name="password" value="${mysql.password}" />
+    </bean>
+    <!-- 创建SqlSesssionFactory【接口】的实例 -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- 配置了数据源 -->
+        <property name="dataSource" ref="dataSource"/>
+        <!-- 收回mybatis读取核心配置文件的权利 -->
+        <property name="configLocation" value="classpath:MyBatis_config.xml"/>
+        <!-- 收回读取映射文件的权利 -->
+        <property name="mapperLocations" value="classpath*:com/shxt/**/*Mapper.xml"/>
+    </bean>
+    <!--6.自动创建接口模式的实现类  -->
+    <bean id="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage">
+            <value>com.shxt.**.dao</value>
+        </property>
+        <!-- 如果配置该项 那么dao层必须写@repository在不同的包下有相同的类打开注释 -->
+        <property name="annotationClass" value="org.springframework.stereotype.Repository"/> 
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+    </bean>
+    <!-- 配置事务管理器 保持数据的一致性和完整性 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!-- 只读的方法不能对数据库进行变更操作 只能查询 -->
+   <tx:advice transaction-manager="transactionManager" id="sericeAdvice">
+        <tx:attributes>
+            <tx:method name="get*" read-only="true"/>
+            <tx:method name="query*" read-only="true"/>
+            <tx:method name="load*" read-only="true"/>
+            <tx:method name="find*" read-only="true"/>
+            <tx:method name="list*" read-only="true"/>
+            <tx:method name="count*" read-only="true"/>
+            <tx:method name="valid*" read-only="true"/>
+            <tx:method name="check*" read-only="true"/>
+            <tx:method name="select*" read-only="true"/>
+            <tx:method name="login*" read-only="true"/>
+            <!-- 所有方法都有事务 -->
+            <tx:method name="*" propagation="REQUIRED"/>
+            
+        </tx:attributes>
+   </tx:advice>
+    <!--通过AOP配置告知监控那个层次  -->
+    <aop:config proxy-target-class="true">
+        <aop:pointcut expression="execution(* com.shxt..service.*Service.*(..))" id="servicePointCut"/>
+        <aop:advisor advice-ref="sericeAdvice" pointcut-ref="servicePointCut"/>
+    </aop:config>
+    <!-- 额外配置 -->
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+    <tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="true"/>
+
+</beans>
